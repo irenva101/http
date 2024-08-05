@@ -16,26 +16,22 @@ import { PlacesService } from '../places.service';
 })
 export class UserPlacesComponent implements OnInit {
   error = signal('');
-  places = signal<Place[] | undefined>(undefined);
   isFetching = signal(false);
-  private placesService= inject(PlacesService);
+  private placesService = inject(PlacesService);
+  places = this.placesService.loadedUserPlaces;
   private destroyRef = inject(DestroyRef);
 
   ngOnInit() {
     this.isFetching.set(true);
-    const subsription = this.placesService.loadUserPlaces()
-      .subscribe({
-        next: (places) => {
-          this.places.set(places);
-        },
-        error: (error: Error) => {
-          console.log(error);
-          this.error.set(error.message);
-        },
-        complete: () => {
-          this.isFetching.set(false);
-        },
-      });
+    const subsription = this.placesService.loadUserPlaces().subscribe({
+      error: (error: Error) => {
+        console.log(error);
+        this.error.set(error.message);
+      },
+      complete: () => {
+        this.isFetching.set(false);
+      },
+    });
 
     this.destroyRef.onDestroy(() => {
       subsription.unsubscribe();
