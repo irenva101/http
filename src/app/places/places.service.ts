@@ -23,17 +23,29 @@ export class PlacesService {
     return this.fetchPlaces(
       'http://localhost:3000/user-places',
       'Something went wrong fetching the favourite places. Please try again later.'
-    ).pipe(tap({
-      next: (userPlaces) => this.userPlaces.set(userPlaces)
-    }));
+    ).pipe(
+      tap({
+        next: (userPlaces) => this.userPlaces.set(userPlaces),
+      })
+    );
   }
 
   addPlaceToUserPlaces(place: Place) {
-    this.userPlaces.update(prevPlaces => [...prevPlaces, place]);
+    const prevPlaces = this.userPlaces();
+
+    if (!prevPlaces.some((p) => p.id === place.id)) { //cant add the place twice to the favourite places
+      this.userPlaces.set([...prevPlaces, place]);
+    }
 
     return this.httpClient.put('http://localhost:3000/user-places', {
       placeId: place.id,
-    });
+    })
+    .pipe( //pipe again for the situations where the pleace is not added correctly
+      catchError((error)=> {
+        this.userPlaces.set(prevPlaces);
+        return throwError(()=> new Error('Failed to store selected place.'));
+      })
+    );
   }
 
   removeUserPlace(place: Place) {}
